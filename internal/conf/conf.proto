@@ -46,3 +46,13 @@ message Snowflake {
   string start_time = 1;
   int64 machine_id = 2;
 }
+
+message Registry {
+  message Consul {
+    // 注册中心地址
+    string address = 1;
+    // 注册协议（HTTP/gRPC）
+    string scheme = 2;
+  }
+  Consul consul = 1;
+}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/go-kratos/kratos/v2/registry"
 	"os"
 	"review-service/pkg/snowflake"
 
@@ -21,9 +22,9 @@ import (
 // go build -ldflags "-X main.Version=x.y.z"
 var (
 	// Name is the name of the compiled software.
-	Name string
+	Name string = "review.service"
 	// Version is the version of the compiled software.
-	Version string
+	Version string = "v0.1"
 	// flagconf is the config flag.
 	flagconf string
 
@@ -34,7 +35,7 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
+func newApp(logger log.Logger, rg registry.Registrar, gs *grpc.Server, hs *http.Server) *kratos.App {
 	return kratos.New(
 		kratos.ID(id),
 		kratos.Name(Name),
@@ -45,6 +46,8 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
 			gs,
 			hs,
 		),
+		// 添加服务注册逻辑
+		kratos.Registrar(rg),
 	)
 }
 
@@ -74,8 +77,14 @@ func main() {
 	if err := c.Scan(&bc); err != nil {
 		panic(err)
 	}
+	// 你可以添加更多解析逻辑 ---> 一个scan对应一个yaml配置文件
+	// 对应的是registry.yaml
+	var rc conf.Registry
+	if err := c.Scan(&rc); err != nil {
+		panic(err)
+	}
 
-	app, cleanup, err := wireApp(bc.Server, bc.Data, logger)
+	app, cleanup, err := wireApp(bc.Server, &rc, bc.Data, logger)
 	if err != nil {
 		panic(err)
 	}
